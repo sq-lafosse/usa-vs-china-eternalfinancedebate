@@ -20,6 +20,9 @@ const PERSONAS: Record<Speaker, {
     panelBg: string;
     portrait: string | null;
     mirror: boolean;
+    nameColor: string;
+    borderSide: "left" | "right";
+    borderColor: string;
 }> = {
     buffett: {
         name: "Warren Buffett",
@@ -27,7 +30,10 @@ const PERSONAS: Record<Speaker, {
         initials: "WB",
         panelBg: "#FFF0CE",
         portrait: PORTRAIT_BUFFETT,
-        mirror: true
+        mirror: true,
+        nameColor: "#C97C0D",
+        borderSide: "left",
+        borderColor: "rgba(201,124,13,0.3)"
     },
     cheah: {
         name: "Cheah Cheng Hye",
@@ -35,7 +41,10 @@ const PERSONAS: Record<Speaker, {
         initials: "CH",
         panelBg: "#F3F0EA",
         portrait: PORTRAIT_CHEAH,
-        mirror: true
+        mirror: false,
+        nameColor: "#276678",
+        borderSide: "right",
+        borderColor: "rgba(39,102,120,0.3)"
     }
 };
 
@@ -53,11 +62,15 @@ function PersonaColumn({ speaker, isActive }: { speaker: Speaker; isActive: bool
     const alignment = speaker === "buffett" ? "items-end text-right" : "items-start text-left";
     const ringClass = isActive ? "ring-4 ring-[#2A2D35]" : "ring-2 ring-[#444]";
 
+    const borderStyles = persona.borderSide === "left"
+        ? { borderLeft: `4px solid ${persona.borderColor}` }
+        : { borderRight: `4px solid ${persona.borderColor}` };
+
     return (
         <aside className={`hidden flex-col justify-center gap-6 lg:flex lg:w-[20rem] xl:w-[24rem] ${alignment}`}>
             <div
                 className={`relative aspect-[3/4] w-full max-w-xs overflow-hidden rounded-[40px] border border-[#444] shadow-[0_20px_50px_-25px_rgba(0,0,0,0.25)] ${ringClass}`}
-                style={{ backgroundColor: persona.panelBg }}
+                style={{ backgroundColor: persona.panelBg, ...borderStyles }}
             >
                 {persona.portrait ? (
                     <img
@@ -73,10 +86,15 @@ function PersonaColumn({ speaker, isActive }: { speaker: Speaker; isActive: bool
                     </div>
                 )}
             </div>
-            <div className="space-y-1">
-                <p className="text-sm font-semibold uppercase tracking-[0.35em] text-[#666]">{speaker === "buffett" ? "Estados Unidos" : "Asia"}</p>
-                <h2 className="text-2xl font-semibold text-[#222]">{persona.name}</h2>
-                <p className="text-sm text-[#444]">{persona.tagline}</p>
+            <div className="space-y-1 text-[15px] leading-[1.5]">
+                <p
+                    className="font-bold text-[17px]"
+                    style={{ color: persona.nameColor, textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}
+                >
+                    {persona.name}
+                </p>
+                <p className="text-sm uppercase tracking-[0.35em] text-[#444]">{speaker === "buffett" ? "Estados Unidos" : "Asia"}</p>
+                <p className="text-[15px] text-[#222]">{persona.tagline}</p>
             </div>
         </aside>
     );
@@ -91,7 +109,7 @@ function TranscriptBubble({ message }: { message: Message }) {
         <div className={`flex ${alignment}`}>
             <div className="max-w-xl rounded-[28px] border border-[#444] bg-[#2A2D35] px-6 py-5 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.25)]">
                 <p className="text-xs uppercase tracking-[0.35em] text-[#C7C7C7]">{persona.name}</p>
-                <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[#F5F5F5]">{message.text}</p>
+                <p className="mt-3 whitespace-pre-line text-[15px] leading-[1.5] text-[#F5F5F5]">{message.text}</p>
             </div>
         </div>
     );
@@ -249,12 +267,12 @@ function App() {
     const highlightedPersona = lastMessage ? PERSONAS[lastMessage.speaker] : null;
 
     return (
-        <div className="flex min-h-screen flex-col bg-[#1C1E24] text-[#F5F5F5]">
+        <div className="flex min-h-screen flex-col bg-[#1C1E24] text-[#F5F5F5] text-[15px] leading-[1.5]">
             <header className="flex flex-col gap-4 border-b border-[#444] bg-gradient-to-r from-[#FFEDBE] to-[#E9E6E0] px-6 py-5 text-[#222]">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#444]">Infinite Debate</p>
-                        <h1 className="text-2xl font-semibold md:text-3xl">Buffett vs Cheah - USA vs China</h1>
+                        <h1 className="text-2xl font-semibold md:text-3xl" style={{ color: "#222" }}>Buffett vs Cheah - USA vs China</h1>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <button
@@ -299,7 +317,7 @@ function App() {
                                     Turno actual - {highlightedPersona?.name}
                                 </p>
                                 <div className="rounded-[36px] border border-[#444] bg-[#2A2D35] px-8 py-10 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.25)]">
-                                    <p className="whitespace-pre-line text-lg leading-8 text-[#F5F5F5]">{lastMessage.text}</p>
+                                    <p className="whitespace-pre-line text-lg leading-[1.6] text-[#F5F5F5]">{lastMessage.text}</p>
                                 </div>
                             </div>
                         ) : (
@@ -348,7 +366,7 @@ function App() {
                                 type="button"
                                 onClick={() => startDebate().catch((err) => console.error(err))}
                                 disabled={isLoading || !openingInput.trim()}
-                                className="rounded-full border border-transparent bg-[#FFB347] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#222] transition hover:bg-[#FFC46F] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-full border border-transparent bg-[#FFB347] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#222] shadow-[0_10px_25px_-18px_rgba(0,0,0,0.25)] transition hover:bg-[#e5a03d] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {messages.length === 0 ? "Iniciar debate" : "Reiniciar con este mensaje"}
                             </button>
@@ -356,7 +374,7 @@ function App() {
                                 type="button"
                                 onClick={() => advanceDebate().catch((err) => console.error(err))}
                                 disabled={isLoading || messages.length === 0}
-                                className="rounded-full border border-transparent bg-[#3A7D8C] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#FFFFFF] transition hover:bg-[#4B93A3] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-full border border-transparent bg-[#3A7D8C] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#FFFFFF] transition hover:bg-[#4693a0] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Siguiente turno
                             </button>
@@ -365,7 +383,7 @@ function App() {
                                 onClick={() => setAutoPlay((prev) => !prev)}
                                 disabled={messages.length === 0}
                                 className={`rounded-full border border-transparent px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#FFFFFF] transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                                    autoPlay ? "bg-[#b169c0] hover:bg-[#c27cd8]" : "bg-[#C779D0] hover:bg-[#D691DB]"
+                                    autoPlay ? "bg-[#b169c0] hover:bg-[#c07ccf]" : "bg-[#C779D0] hover:bg-[#d38be0]"
                                 }`}
                             >
                                 {autoPlay ? "Detener auto" : "Auto play"}
