@@ -86,15 +86,19 @@ function PersonaColumn({ speaker, isActive }: { speaker: Speaker; isActive: bool
                     </div>
                 )}
             </div>
-            <div className="space-y-1 text-[15px] leading-[1.5]">
+            <div className="space-y-1 text-[15px] leading-[1.6] tracking-[0.5px]">
                 <p
-                    className="font-bold text-[17px]"
+                    className="font-bold text-[18px]"
                     style={{ color: persona.nameColor, textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}
                 >
                     {persona.name}
                 </p>
-                <p className="text-sm uppercase tracking-[0.35em] text-[#444]">{speaker === "buffett" ? "Estados Unidos" : "Asia"}</p>
-                <p className="text-[15px] text-[#222]">{persona.tagline}</p>
+                <p className="text-[13px] uppercase tracking-[0.35em]" style={{ color: "#AAAAAA", letterSpacing: "1px" }}>
+                    {speaker === "buffett" ? "Estados Unidos" : "Asia"}
+                </p>
+                <p className="text-[14px] text-[#E0E0E0]">
+                    {persona.tagline}
+                </p>
             </div>
         </aside>
     );
@@ -109,7 +113,7 @@ function TranscriptBubble({ message }: { message: Message }) {
         <div className={`flex ${alignment}`}>
             <div className="max-w-xl rounded-[28px] border border-[#444] bg-[#2A2D35] px-6 py-5 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.25)]">
                 <p className="text-xs uppercase tracking-[0.35em] text-[#C7C7C7]">{persona.name}</p>
-                <p className="mt-3 whitespace-pre-line text-[15px] leading-[1.5] text-[#F5F5F5]">{message.text}</p>
+                <p className="mt-3 whitespace-pre-line text-[15px] leading-[1.6] tracking-[0.5px] text-[#F5F5F5]">{message.text}</p>
             </div>
         </div>
     );
@@ -267,26 +271,26 @@ function App() {
     const highlightedPersona = lastMessage ? PERSONAS[lastMessage.speaker] : null;
 
     return (
-        <div className="flex min-h-screen flex-col bg-[#1C1E24] text-[#F5F5F5] text-[15px] leading-[1.5]">
+        <div className="flex min-h-screen flex-col bg-[#1C1E24] text-[#F5F5F5] text-[15px] leading-[1.6] tracking-[0.5px]">
             <header className="flex flex-col gap-4 border-b border-[#444] bg-gradient-to-r from-[#FFEDBE] to-[#E9E6E0] px-6 py-5 text-[#222]">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#444]">Infinite Debate</p>
-                        <h1 className="text-2xl font-semibold md:text-3xl" style={{ color: "#222" }}>Buffett vs Cheah - USA vs China</h1>
+                        <h1 className="text-2xl font-semibold md:text-3xl" style={{ color: "#222", letterSpacing: "0.5px" }}>Buffett vs Cheah - USA vs China</h1>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         <button
                             type="button"
                             onClick={() => fetchSeed().catch((err) => console.error(err))}
                             disabled={isFetchingSeed}
-                            className="rounded-full border border-[#444] bg-[#F3F0EA] px-4 py-2 text-sm font-medium text-[#222] transition hover:bg-[#fff3d9] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-full border border-[#444] bg-[#F3F0EA] px-4 py-2 text-sm font-medium text-[#222] transition hover:brightness-[1.08] hover:shadow-[0_0_6px_currentColor] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {isFetchingSeed ? "Cargando tema..." : "Nuevo tema"}
                         </button>
                         <button
                             type="button"
                             onClick={resetDebate}
-                            className="rounded-full border border-[#444] bg-[#E9E6E0] px-4 py-2 text-sm font-medium text-[#222] transition hover:bg-[#f7f4ec]"
+                            className="rounded-full border border-[#444] bg-[#E9E6E0] px-4 py-2 text-sm font-medium text-[#222] transition hover:brightness-[1.08] hover:shadow-[0_0_6px_currentColor]"
                         >
                             Limpiar tablero
                         </button>
@@ -317,7 +321,7 @@ function App() {
                                     Turno actual - {highlightedPersona?.name}
                                 </p>
                                 <div className="rounded-[36px] border border-[#444] bg-[#2A2D35] px-8 py-10 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.25)]">
-                                    <p className="whitespace-pre-line text-lg leading-[1.6] text-[#F5F5F5]">{lastMessage.text}</p>
+                                    <p className="whitespace-pre-line text-lg leading-[1.6] tracking-[0.5px] text-[#F5F5F5]">{lastMessage.text}</p>
                                 </div>
                             </div>
                         ) : (
@@ -359,14 +363,14 @@ function App() {
                             value={openingInput}
                             onChange={(event) => setOpeningInput(event.target.value)}
                             placeholder="Escribe un mensaje para que Cheah abra el debate..."
-                            className="mt-4 h-32 w-full resize-none rounded-[28px] border border-[#444] bg-[#1C1E24] px-5 py-4 text-sm text-[#F5F5F5] outline-none transition placeholder:text-[#C7C7C7] focus:border-[#3A7D8C] focus:ring-1 focus:ring-[#3A7D8C]"
+                            className="mt-4 h-32 w-full resize-none rounded-[28px] border border-[#444] bg-[#1C1E24] px-5 py-4 text-sm text-[#F5F5F5] outline-none transition placeholder:text-[#CCCCCC] placeholder:italic focus:border-[#3A7D8C] focus:ring-1 focus:ring-[#3A7D8C]"
                         />
                         <div className="mt-4 flex flex-wrap gap-3">
                             <button
                                 type="button"
                                 onClick={() => startDebate().catch((err) => console.error(err))}
                                 disabled={isLoading || !openingInput.trim()}
-                                className="rounded-full border border-transparent bg-[#FFB347] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#222] shadow-[0_10px_25px_-18px_rgba(0,0,0,0.25)] transition hover:bg-[#e5a03d] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-full border border-transparent bg-[#FFB347] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#222] shadow-[0_10px_25px_-18px_rgba(0,0,0,0.25)] transition hover:brightness-[1.08] hover:shadow-[0_0_6px_currentColor] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {messages.length === 0 ? "Iniciar debate" : "Reiniciar con este mensaje"}
                             </button>
@@ -374,7 +378,7 @@ function App() {
                                 type="button"
                                 onClick={() => advanceDebate().catch((err) => console.error(err))}
                                 disabled={isLoading || messages.length === 0}
-                                className="rounded-full border border-transparent bg-[#3A7D8C] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#FFFFFF] transition hover:bg-[#4693a0] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-full border border-transparent bg-[#3A7D8C] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#FFFFFF] transition hover:brightness-[1.08] hover:shadow-[0_0_6px_currentColor] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Siguiente turno
                             </button>
@@ -382,8 +386,8 @@ function App() {
                                 type="button"
                                 onClick={() => setAutoPlay((prev) => !prev)}
                                 disabled={messages.length === 0}
-                                className={`rounded-full border border-transparent px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#FFFFFF] transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                                    autoPlay ? "bg-[#b169c0] hover:bg-[#c07ccf]" : "bg-[#C779D0] hover:bg-[#d38be0]"
+                                className={`rounded-full border border-transparent px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-[#FFFFFF] transition hover:brightness-[1.08] hover:shadow-[0_0_6px_currentColor] disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    autoPlay ? "bg-[#b169c0]" : "bg-[#C779D0]"
                                 }`}
                             >
                                 {autoPlay ? "Detener auto" : "Auto play"}
