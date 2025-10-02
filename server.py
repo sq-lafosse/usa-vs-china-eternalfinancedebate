@@ -1,13 +1,13 @@
-"""
+﻿"""
 server.py - Backend FastAPI para Infinite Debate
 
 Endpoints:
-- POST /turn: genera respuesta de Buffett o Cheah usando la lógica avanzada de main.py
+- POST /turn: genera respuesta de Buffett o Cheah usando la logica avanzada de main.py
 - GET /seed: devuelve un tema inicial aleatorio
 - (Opcional) /tts: placeholder para TTS real (Deepgram) o fallback a Web Speech API en frontend
 
 Notas:
-- La clase MemoriaDebate se instancia por sesión (simple para demo, global para prototipo)
+- La clase MemoriaDebate se instancia por sesion (simple para demo, global para prototipo)
 - Habilita CORS para http://localhost:5173
 - Ver comentarios para enlaces a Deepgram y referencias de Infinite Conversation
 """
@@ -26,7 +26,7 @@ from infinite_debate.main import (
     MemoriaDebate
 )
 
-# === Configuración FastAPI ===
+# === Configuracion FastAPI ===
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -36,23 +36,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# === Memoria global (para demo, ideal: por usuario/sesión) ===
+# === Memoria global (para demo, ideal: por usuario/sesion) ===
 memoria = MemoriaDebate()
 
 # === Seeds de temas ===
 TOPICS = [
     "Dividendos vs DY en mercados emergentes",
-    "PEG vs ROE en tecnológicas chinas y americanas",
+    "PEG vs ROE en tecnologicas chinas y americanas",
     "PFS y riesgo regulatorio en Asia",
-    "Transición energética: BYD vs Tesla",
+    "Transicion energetica: BYD vs Tesla",
     "IA y semiconductores: Nvidia vs SMIC",
-    "Inflación y tasas de interés globales",
-    "Dólar fuerte y exportaciones asiáticas",
+    "Inflacion y tasas de interes globales",
+    "Dolar fuerte y exportaciones asiaticas",
     "Infraestructura vs apps: China Mobile vs Apple",
-    "Política y empresas estatales",
-    "Crecimiento vs calidad: Graham vs value asiático",
-    "Dividendos políticos (政策红利) y su impacto",
-    "Gestión de riesgo en mercados volátiles"
+    "Politica y empresas estatales",
+    "Crecimiento vs calidad: Graham vs value asiatico",
+    "Dividendos politicos y su impacto",
+    "Gestion de riesgo en mercados volatiles"
 ]
 
 class TurnRequest(BaseModel):
@@ -66,9 +66,9 @@ async def turn(req: TurnRequest):
         prompt = buffett_prompt
     else:
         prompt = cheah_prompt
-    # Llama a la función de generación avanzada
+    # Llama a la funcion de generacion avanzada
     respuesta = generar_respuesta(prompt, req.message, req.speaker)
-    # (Opcional) Generar audio con TTS real aquí y guardar como /tts/{uuid}.mp3
+    # (Opcional) Generar audio con TTS real aqui y guardar como /tts/{uuid}.mp3
     audio_url = f"/tts/{uuid.uuid4()}.mp3"  # Placeholder
     return {"text": respuesta, "audioUrl": audio_url}
 
@@ -80,7 +80,7 @@ async def seed():
 # (Opcional) Endpoint para TTS real
 # @app.get("/tts/{audio_id}")
 # async def tts(audio_id: str):
-#     # Implementar integración con Deepgram TTS aquí
+#     # Implementar integracion con Deepgram TTS aqui
 #     pass
 
 if __name__ == "__main__":
@@ -90,3 +90,5 @@ if __name__ == "__main__":
 # - https://developers.deepgram.com/docs/tts
 # - https://infiniteconversation.com/faq
 # - https://arstechnica.com/information-technology/2023/07/ai-generated-infinite-podcast-imitates-lex-fridman-and-joe-rogan/
+
+

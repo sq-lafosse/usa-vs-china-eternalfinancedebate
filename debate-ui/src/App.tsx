@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+
+const PORTRAIT_BUFFETT = new URL("./assets/portrait-buffett.png", import.meta.url).href;
+const PORTRAIT_CHEAH = new URL("./assets/portrait-cheah.png", import.meta.url).href;
 
 type Speaker = "buffett" | "cheah";
 
@@ -10,20 +13,29 @@ interface Message {
   text: string;
 }
 
-const PERSONAS: Record<Speaker, { name: string; tagline: string; initials: string; avatarClass: string; bubbleClass: string }> = {
+const PERSONAS: Record<Speaker, {
+  name: string;
+  tagline: string;
+  initials: string;
+  accent: string;
+  portrait: string | null;
+  mirror: boolean;
+}> = {
   buffett: {
     name: "Warren Buffett",
     tagline: "USA - Value investing clasico",
     initials: "WB",
-    avatarClass: "border border-amber-400/40 bg-amber-500/10 text-amber-100",
-    bubbleClass: "border border-amber-400/20 bg-amber-500/5"
+    accent: "from-amber-400/60 via-amber-500/20 to-amber-600/10",
+    portrait: PORTRAIT_BUFFETT,
+    mirror: true
   },
   cheah: {
     name: "Cheah Cheng Hye",
     tagline: "Asia - Value con lente oriental",
     initials: "CH",
-    avatarClass: "border border-sky-400/40 bg-sky-500/10 text-sky-100",
-    bubbleClass: "border border-sky-400/20 bg-sky-500/5"
+    accent: "from-sky-400/60 via-sky-500/20 to-sky-600/10",
+    portrait: PORTRAIT_CHEAH,
+    mirror: true
   }
 };
 
@@ -36,23 +48,53 @@ const createId = () => {
   return Math.random().toString(36).slice(2, 12);
 };
 
-function MessageBubble({ message }: { message: Message }) {
-  const persona = PERSONAS[message.speaker];
-  const isRightAligned = message.speaker === "buffett";
+function PersonaColumn({ speaker, isActive }: { speaker: Speaker; isActive: boolean }) {
+  const persona = PERSONAS[speaker];
+  const alignment = speaker === "buffett" ? "items-end text-right" : "items-start text-left";
+  const borderGlow = isActive ? "ring-4 ring-slate-100/40" : "ring-2 ring-slate-800/60";
 
   return (
-    <div className={`flex ${isRightAligned ? "justify-end" : "justify-start"}`}>
-      <div className={`flex w-full max-w-3xl gap-3 ${isRightAligned ? "flex-row-reverse text-right" : "text-left"}`}>
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${persona.avatarClass} font-semibold uppercase tracking-wide`}>
-          {persona.initials}
-        </div>
-        <div className={`relative w-full rounded-2xl ${persona.bubbleClass} px-5 py-4 shadow-glow backdrop-blur`}>
-          <div className="flex flex-col gap-0.5 text-left">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{persona.name}</span>
-            <span className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-500">{persona.tagline}</span>
+    <aside className={`hidden flex-col justify-center gap-6 lg:flex lg:w-[20rem] xl:w-[24rem] ${alignment}`}>
+      <div
+        className={`relative aspect-[3/4] w-full max-w-xs overflow-hidden rounded-[40px] border border-slate-800/50 bg-gradient-to-b ${persona.accent} ${borderGlow}`}
+      >
+        {persona.portrait ? (
+          <img
+            src={persona.portrait}
+            alt={persona.name}
+            className={`h-full w-full object-cover object-center ${persona.mirror ? "scale-x-[-1]" : ""}`}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-slate-900/60">
+            <span className="text-5xl font-semibold tracking-[0.6em] text-slate-200">
+              {persona.initials}
+            </span>
           </div>
-          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-100">{message.text}</p>
-        </div>
+        )}
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-500">{speaker === "buffett" ? "Estados Unidos" : "Asia"}</p>
+        <h2 className="text-2xl font-semibold text-slate-100">{persona.name}</h2>
+        <p className="text-sm text-slate-400">{persona.tagline}</p>
+      </div>
+    </aside>
+  );
+}
+
+function TranscriptBubble({ message }: { message: Message }) {
+  const persona = PERSONAS[message.speaker];
+  const isBuffett = message.speaker === "buffett";
+  const alignment = isBuffett ? "justify-end" : "justify-start";
+  const accentBorder = isBuffett ? "border-amber-400/30" : "border-sky-400/30";
+  const accentGlow = isBuffett ? "shadow-[0_0_45px_-20px_rgba(251,191,36,0.35)]" : "shadow-[0_0_45px_-20px_rgba(56,189,248,0.35)]";
+
+  return (
+    <div className={`flex ${alignment}`}>
+      <div
+        className={`max-w-xl rounded-[28px] border ${accentBorder} bg-slate-900/60 px-6 py-5 backdrop-blur ${accentGlow}`}
+      >
+        <p className="text-xs uppercase tracking-[0.35em] text-slate-500">{persona.name}</p>
+        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-200">{message.text}</p>
       </div>
     </div>
   );
@@ -68,9 +110,10 @@ function App() {
   const [autoPlay, setAutoPlay] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
 
   const lastMessage = messages[messages.length - 1];
+  const transcriptMessages = lastMessage ? messages.slice(0, -1) : messages;
   const turnCount = useMemo(() => Math.floor(messages.length / 2), [messages.length]);
 
   const fetchSeed = useCallback(async () => {
@@ -88,7 +131,7 @@ function App() {
       setTopic(data.seed);
       setOpeningInput(data.seed);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error desconocido al solicitar el seed.";
+      const message = err instanceof Error ? err.message : "Error desconocido al solicitar el tema.";
       setError(message);
     } finally {
       setIsFetchingSeed(false);
@@ -190,11 +233,11 @@ function App() {
   }, [autoPlay, advanceDebate, isLoading, lastMessage, messages.length]);
 
   useEffect(() => {
-    if (!scrollRef.current) {
+    if (!transcriptRef.current) {
       return;
     }
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    transcriptRef.current.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: "smooth" });
+  }, [transcriptMessages.length]);
 
   const resetDebate = () => {
     setMessages([]);
@@ -206,99 +249,109 @@ function App() {
     }
   };
 
+  const highlightedPersona = lastMessage ? PERSONAS[lastMessage.speaker] : null;
+
   return (
-    <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_45%),_radial-gradient(circle_at_bottom,_rgba(251,191,36,0.1),_transparent_55%)]" />
-      <header className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-8 shadow-lg backdrop-blur">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-3xl space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Debate infinito</p>
-            <h1 className="text-3xl font-semibold text-white sm:text-4xl">Buffett vs Cheah - USA vs China</h1>
-            <p className="text-sm text-slate-300">
-              Orquesta un duelo entre el Oraculo de Omaha y el Warren Buffett de Asia. Presiona "Iniciar" con un mensaje de apertura (o usa el tema sugerido) y avanza turno a turno o activa el modo automatico.
-            </p>
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
+      <header className="flex flex-col gap-4 border-b border-slate-900/70 bg-slate-950/90 px-6 py-5 backdrop-blur">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">Infinite Debate</p>
+            <h1 className="text-2xl font-semibold text-slate-100 md:text-3xl">Buffett vs Cheah - USA vs China</h1>
           </div>
-          <div className="flex w-full flex-wrap items-center justify-end gap-3 md:w-auto">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => fetchSeed().catch((err) => console.error(err))}
               disabled={isFetchingSeed}
-              className="rounded-full border border-sky-400/20 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-200 transition hover:border-sky-400/40 hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-full border border-slate-700/70 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isFetchingSeed ? "Cargando tema..." : "Nuevo tema"}
             </button>
             <button
               type="button"
               onClick={resetDebate}
-              className="rounded-full border border-slate-700/70 bg-slate-800/80 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-800"
+              className="rounded-full border border-slate-800/80 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-900"
             >
               Limpiar tablero
             </button>
           </div>
         </div>
         {topic && (
-          <div className="mt-6 inline-flex flex-wrap items-center gap-2 text-sm text-slate-300">
-            <span className="text-xs uppercase tracking-[0.3em] text-slate-500">Tema sugerido</span>
+          <div className="inline-flex flex-wrap items-center gap-3 text-sm text-slate-300">
+            <span className="text-xs uppercase tracking-[0.35em] text-slate-500">Tema sugerido</span>
             <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-4 py-1 text-amber-100">{topic}</span>
           </div>
         )}
       </header>
 
       {error && (
-        <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="border-b border-rose-500/30 bg-rose-500/10 px-6 py-3 text-sm text-rose-100">
           {error}
         </div>
       )}
 
-      <section className="flex flex-1 flex-col gap-6">
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto rounded-3xl border border-slate-800/70 bg-slate-900/60 p-6 shadow-lg backdrop-blur"
-        >
-          <div className="flex flex-col gap-5">
-            {messages.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-slate-700/80 bg-slate-900/40 p-8 text-center text-sm text-slate-400">
-                Aun no hay intervenciones. Genera un tema o escribe un mensaje inicial para que Cheah abra el debate y deja que Warren responda.
-              </div>
-            )}
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
-            {isLoading && (
-              <div className="flex justify-center">
-                <div className="animate-pulse rounded-full border border-sky-400/20 bg-sky-500/10 px-4 py-2 text-xs font-medium tracking-[0.4em] text-sky-200">
-                  Generando...
+      <main className="flex flex-1 flex-col gap-8 px-6 py-8 lg:flex-row lg:items-stretch lg:justify-between lg:gap-12">
+        <PersonaColumn speaker="cheah" isActive={lastMessage?.speaker === "cheah"} />
+
+        <section className="flex w-full max-w-4xl flex-1 flex-col items-center gap-10 self-center lg:px-6">
+          <div className="w-full max-w-3xl text-center">
+            {lastMessage ? (
+              <div className="space-y-5">
+                <p className="text-xs uppercase tracking-[0.4em] text-slate-500">
+                  Turno actual - {highlightedPersona?.name}
+                </p>
+                <div className="rounded-[36px] border border-slate-800/70 bg-slate-900/70 px-8 py-10 shadow-[0_0_60px_-35px_rgba(94,234,212,0.45)]">
+                  <p className="whitespace-pre-line text-lg leading-8 text-slate-100">{lastMessage.text}</p>
                 </div>
+              </div>
+            ) : (
+              <div className="rounded-[36px] border border-dashed border-slate-800/60 bg-slate-900/50 px-8 py-12 text-sm text-slate-400">
+                Orquesta el duelo escribiendo un mensaje inicial para Cheah o utiliza el tema sugerido. Warren respondera y podras continuar turno a turno o activar el modo automatico.
               </div>
             )}
           </div>
-        </div>
 
-        <div className="rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-lg backdrop-blur">
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px] md:items-center md:gap-6">
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Proximo turno</p>
-                  <p className="font-semibold text-slate-100">{PERSONAS[nextSpeaker].name}</p>
+          <div
+            ref={transcriptRef}
+            className="w-full max-w-3xl flex-1 overflow-y-auto rounded-[36px] border border-slate-900/70 bg-slate-950/60 px-6 py-7 backdrop-blur"
+          >
+            <div className="flex flex-col gap-4">
+              {transcriptMessages.length === 0 && messages.length === 0 && (
+                <p className="text-center text-sm text-slate-500">
+                  Aun no hay intervenciones registradas.
+                </p>
+              )}
+              {transcriptMessages.map((message) => (
+                <TranscriptBubble key={message.id} message={message} />
+              ))}
+              {isLoading && (
+                <div className="flex justify-center">
+                  <div className="animate-pulse rounded-full border border-sky-400/20 bg-sky-500/10 px-4 py-2 text-xs font-medium tracking-[0.4em] text-sky-200">
+                    Generando...
+                  </div>
                 </div>
-                <div className="rounded-full border border-slate-700/60 bg-slate-800/80 px-3 py-1 text-xs uppercase tracking-[0.35em] text-slate-400">
-                  Turnos disputados - {turnCount}
-                </div>
-              </div>
-              <textarea
-                value={openingInput}
-                onChange={(event) => setOpeningInput(event.target.value)}
-                placeholder="Escribe un mensaje para que Cheah abra el debate..."
-                className="h-28 w-full resize-none rounded-2xl border border-slate-700/70 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-sky-400/60"
-              />
+              )}
             </div>
-            <div className="flex flex-col gap-3">
+          </div>
+
+          <div className="w-full max-w-3xl rounded-[36px] border border-slate-900/70 bg-slate-950/70 px-6 py-6 shadow-[0_0_55px_-38px_rgba(148,163,184,0.55)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-[0.4em] text-slate-500">
+              <span>Turnos disputados - {turnCount}</span>
+              <span>Proximo turno - {PERSONAS[nextSpeaker].name}</span>
+            </div>
+            <textarea
+              value={openingInput}
+              onChange={(event) => setOpeningInput(event.target.value)}
+              placeholder="Escribe un mensaje para que Cheah abra el debate..."
+              className="mt-4 h-32 w-full resize-none rounded-[28px] border border-slate-800/70 bg-slate-950/70 px-5 py-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-500/40"
+            />
+            <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => startDebate().catch((err) => console.error(err))}
                 disabled={isLoading || !openingInput.trim()}
-                className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100 transition hover:border-emerald-400/60 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100 transition hover:border-emerald-400/60 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {messages.length === 0 ? "Iniciar debate" : "Reiniciar con este mensaje"}
               </button>
@@ -306,7 +359,7 @@ function App() {
                 type="button"
                 onClick={() => advanceDebate().catch((err) => console.error(err))}
                 disabled={isLoading || messages.length === 0}
-                className="w-full rounded-xl border border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-sky-100 transition hover:border-sky-400/60 hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full border border-sky-400/40 bg-sky-500/10 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-sky-100 transition hover:border-sky-400/60 hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Siguiente turno
               </button>
@@ -314,20 +367,24 @@ function App() {
                 type="button"
                 onClick={() => setAutoPlay((prev) => !prev)}
                 disabled={messages.length === 0}
-                className={`w-full rounded-xl border px-4 py-2 text-sm font-semibold uppercase tracking-[0.3em] transition ${
+                className={`rounded-full border px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] transition ${
                   autoPlay
-                    ? "border-rose-400/40 bg-rose-500/10 text-rose-100 hover:border-rose-400/60 hover:bg-rose-500/20"
-                    : "border-purple-400/30 bg-purple-500/10 text-purple-100 hover:border-purple-400/60 hover:bg-purple-500/20"
+                    ? "border-rose-400/50 bg-rose-500/10 text-rose-100 hover:border-rose-400/70 hover:bg-rose-500/20"
+                    : "border-purple-400/40 bg-purple-500/10 text-purple-100 hover:border-purple-400/60 hover:bg-purple-500/20"
                 } disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 {autoPlay ? "Detener auto" : "Auto play"}
               </button>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <PersonaColumn speaker="buffett" isActive={lastMessage?.speaker === "buffett"} />
+      </main>
     </div>
   );
 }
 
 export default App;
+
+

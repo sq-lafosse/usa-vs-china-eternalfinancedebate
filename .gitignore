@@ -1,2 +1,29 @@
-# Ignorar archivos de entorno y claves
+﻿# Root ignore rules
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+.venv/
+*/venv/
+env/
 .env
+*/.env
+
+# Node
+debate-ui/node_modules/
+debate-ui/dist/
+debate-ui/.vite/
+
+# Build artifacts
+*.log
+*.lock
+
+# OS
+.DS_Store
+Thumbs.db

@@ -21,13 +21,13 @@ class MemoriaDebate:
 	def obtener_contexto_evitacion(self, personaje):
 		contexto = []
 		if personaje == "buffett" and self.metricas_buffett:
-			contexto.append(f"Evita repetir métricas ya mencionadas: {', '.join(self.metricas_buffett)}.")
+			contexto.append(f"Evita repetir metricas ya mencionadas: {', '.join(self.metricas_buffett)}.")
 		if personaje == "cheah" and self.metricas_cheah:
-			contexto.append(f"Evita repetir métricas ya mencionadas: {', '.join(self.metricas_cheah)}.")
+			contexto.append(f"Evita repetir metricas ya mencionadas: {', '.join(self.metricas_cheah)}.")
 		if self.empresas:
 			contexto.append(f"Evita repetir empresas ya mencionadas: {', '.join(self.empresas)}.")
 		if self.temas:
-			contexto.append(f"Varía el tema, ya se habló de: {', '.join(self.temas)}.")
+			contexto.append(f"Varia el tema, ya se hablo de: {', '.join(self.temas)}.")
 		return " ".join(contexto)
 # === Postprocesamiento avanzado ===
 import re
@@ -38,7 +38,7 @@ def mejorar_fluidez_texto(texto: str) -> str:
 	texto = re.sub(r'(\b\w{3,}\b)([^\w\n]+\1\b)+', r'\1', texto, flags=re.IGNORECASE)  # frases repetidas
 	texto = re.sub(r'\.{2,}', '.', texto)  # puntos dobles
 	texto = re.sub(r'\s+\.', '.', texto)  # espacio antes de punto
-	texto = re.sub(r'\bval\b', 'valor', texto)  # ejemplo de corte común
+	texto = re.sub(r'\bval\b', 'valor', texto)  # ejemplo de corte comun
 	texto = re.sub(r'\bco mo\b', 'como', texto)
 	texto = re.sub(r'\s{2,}', ' ', texto)
 	return texto.strip()
@@ -62,12 +62,12 @@ def evitar_repeticion(texto: str) -> str:
 			resultado.append(frase.strip())
 			vistas.add(f)
 	return ' '.join(resultado)
-# === Lógica avanzada de formato, longitud, personalidad y bancos de preguntas ===
+# === Logica avanzada de formato, longitud, personalidad y bancos de preguntas ===
 import re, random
 
 REGLA_HINT = (
-	"Recuerda: 2–4 frases, 350–550 caracteres, sin listas ni negritas, "
-	"incluye al menos una métrica concreta (p.ej., ROE, P/B, PEG, DY, PFS), "
+	"Recuerda: 2-4 frases, 350-550 caracteres, sin listas ni negritas, "
+	"incluye al menos una metrica concreta (p.ej., ROE, P/B, PEG, DY, PFS), "
 	"y termina con una sola pregunta."
 )
 
@@ -77,19 +77,19 @@ def prompt_personaje(personaje_prompt: str) -> str:
 MIN_LEN, MAX_LEN = 350, 550
 
 PREGUNTAS_BUFFETT = [
-	"¿No crees que estás sobrevalorando el crecimiento frente a la calidad?",
-	"¿Cómo justificas esa valuación con ROEs modestos?",
-	"¿No subestimas el riesgo regulatorio en tu tesis?"
+	"No crees que estas sobrevalorando el crecimiento frente a la calidad?",
+	"Como justificas esa valuacion con ROEs modestos?",
+	"No subestimas el riesgo regulatorio en tu tesis?"
 ]
 PREGUNTAS_CHEAH = [
-	"¿No estás ignorando el dividendo político (政策红利)?",
-	"¿Cómo ajustas tu análisis a la velocidad asiática?",
-	"¿Por qué sigues buscando análogos occidentales en un río distinto?"
+	"No estas ignorando el dividendo politico (hongli)?",
+	"Como ajustas tu analisis a la velocidad asiatica?",
+	"Por que sigues buscando analogos occidentales en un rio distinto?"
 ]
 
 def limpiar_formato(texto: str) -> str:
-	# Quita bullets/markdown básicos
-	t = re.sub(r"[*•\-]+(\s+)", " ", texto)
+	# Quita bullets/markdown basicos
+	t = re.sub(r"[*\-]+(\s+)", " ", texto)
 	t = re.sub(r"\n+", " ", t)
 	t = re.sub(r"\s{2,}", " ", t).strip()
 	t = t.replace("**", "")
@@ -135,7 +135,7 @@ def postprocesar(texto: str, personaje: str) -> str:
 def generar_respuesta(personaje_prompt, mensaje, personaje):
 	msg_ctx = (
 		"Debate Oriente vs Occidente. Responde con tu personalidad y principios. "
-		"Incluye al menos una métrica concreta (ROE, P/B, flujo de caja; o PEG, DY, PFS). "
+		"Incluye al menos una metrica concreta (ROE, P/B, flujo de caja; o PEG, DY, PFS). "
 		"Sin bullets ni negritas. Cierra con una sola pregunta.\n\n"
 		f'Mensaje del otro inversor: "{mensaje}"'
 	)
@@ -162,7 +162,7 @@ def generar_respuesta(personaje_prompt, mensaje, personaje):
 			frequency_penalty=0.2,
 			messages=[
 				{"role": "system", "content": prompt_personaje(personaje_prompt)},
-				{"role": "user", "content": msg_ctx + "\n\nAmplía en 1–2 frases más y cierra con una sola pregunta."}
+				{"role": "user", "content": msg_ctx + "\n\nAmplia en 1-2 frases mas y cierra con una sola pregunta."}
 			]
 		)
 		texto = resp2.choices[0].message.content.strip()
@@ -188,20 +188,21 @@ with open(os.path.join(script_dir, "cheah.txt"), "r", encoding="utf-8") as f:
 
 def debate(turnos=3):
 	mensaje = (
-		"Warren, tu búsqueda de ‘negocios simples’ funciona en mercados maduros; "
-		"en Asia, la calidad incluye 国情 (situación nacional) y 政策红利 (dividendo político). "
-		"Si el PEG está por debajo de 1.5 y el PFS es alto, ¿no merece una prima?"
+		"Warren, tu busqueda de negocios simples funciona en mercados maduros; "
+		"en Asia, la calidad incluye guoqing (situacion nacional) y hongli (dividendo politico). "
+		"Si el PEG esta por debajo de 1.5 y el PFS es alto, no merece una prima?"
 	)
-	print("🎯 DEBATE INICIAL")
+	print("*** DEBATE INICIAL ***")
 	print(f"Cheah: {mensaje}")
 
 	for i in range(turnos):
-		print(f"\n{'='*50}\n🎯 TURNO {i+1}\n{'='*50}")
+		print(f"\n{'='*50}\n*** TURNO {i+1} ***\n{'='*50}")
 		buffett_respuesta = generar_respuesta(buffett_prompt, mensaje, "buffett")
-		print(f"📈 BUFFETT: {buffett_respuesta}")
+		print(f"BUFFETT: {buffett_respuesta}")
 		cheah_respuesta = generar_respuesta(cheah_prompt, buffett_respuesta, "cheah")
-		print(f"🧧 CHEAH: {cheah_respuesta}")
+		print(f"CHEAH: {cheah_respuesta}")
 		mensaje = cheah_respuesta
 
 if __name__ == "__main__":
 	debate()
+
