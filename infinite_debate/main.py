@@ -1,11 +1,10 @@
 import os
 import random
 import re
-import time
 from typing import Dict, List, Optional
 
-import requests
-from requests import RequestException
+from dotenv import load_dotenv
+from groq import Groq
 
 
 # === Memoria de contexto para el debate ===
@@ -48,26 +47,26 @@ class MemoriaDebate:
 # === Postprocesamiento avanzado ===
 def mejorar_fluidez_texto(texto: str) -> str:
     # Elimina repeticiones de palabras/frases, puntos dobles, cortes bruscos
-    texto = re.sub(r"(\b\w+\b)(\s+\1\b)+", r"\1", texto, flags=re.IGNORECASE)
-    texto = re.sub(r"(\b\w{3,}\b)([^\w\n]+\1\b)+", r"\1", texto, flags=re.IGNORECASE)
-    texto = re.sub(r"\.{2,}", ".", texto)
-    texto = re.sub(r"\s+\.", ".", texto)
-    texto = re.sub(r"\bval\b", "valor", texto)
-    texto = re.sub(r"\bco mo\b", "como", texto)
-    texto = re.sub(r"\s{2,}", " ", texto)
+    texto = re.sub(r"(\\b\\w+\\b)(\\s+\\1\\b)+", r"\\1", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"(\\b\\w{3,}\\b)([^\\w\\n]+\\1\\b)+", r"\\1", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"\\.{2,}", ".", texto)
+    texto = re.sub(r"\\s+\\.", ".", texto)
+    texto = re.sub(r"\\bval\\b", "valor", texto)
+    texto = re.sub(r"\\bco mo\\b", "como", texto)
+    texto = re.sub(r"\\s{2,}", " ", texto)
     return texto.strip()
 
 
 def reconstruir_oraciones(texto: str) -> str:
-    texto = re.sub(r"\bval\b", "valor", texto)
-    texto = re.sub(r"\bco mo\b", "como", texto)
-    texto = re.sub(r"\bempres\b", "empresa", texto)
-    texto = re.sub(r"\bmercad\b", "mercado", texto)
+    texto = re.sub(r"\\bval\\b", "valor", texto)
+    texto = re.sub(r"\\bco mo\\b", "como", texto)
+    texto = re.sub(r"\\bempres\\b", "empresa", texto)
+    texto = re.sub(r"\\bmercad\\b", "mercado", texto)
     return texto
 
 
 def evitar_repeticion(texto: str) -> str:
-    frases = re.split(r"(?<=[.!?])\s+", texto)
+    frases = re.split(r"(?<=[.!?])\\s+", texto)
     vistas = set()
     resultado = []
     for frase in frases:
@@ -105,15 +104,15 @@ PREGUNTAS_CHEAH = [
 
 
 def limpiar_formato(texto: str) -> str:
-    t = re.sub(r"[*\-]+(\s+)", " ", texto)
-    t = re.sub(r"\n+", " ", t)
-    t = re.sub(r"\s{2,}", " ", t).strip()
+    t = re.sub(r"[*\\-]+(\\s+)", " ", texto)
+    t = re.sub(r"\\n+", " ", t)
+    t = re.sub(r"\\s{2,}", " ", t).strip()
     t = t.replace("**", "")
     return t
 
 
 def limitar_oraciones(texto: str, max_oraciones: int = 4) -> str:
-    oraciones = re.split(r"(?<=[.!?])\s+", texto)
+    oraciones = re.split(r"(?<=[.!?])\\s+", texto)
     if len(oraciones) > max_oraciones:
         texto = " ".join(oraciones[:max_oraciones]).strip()
     return texto
@@ -137,7 +136,7 @@ def asegurar_pregunta(texto: str, personaje: str) -> str:
     if not t.endswith("?"):
         pool = PREGUNTAS_BUFFETT if personaje == "buffett" else PREGUNTAS_CHEAH
         t += " " + random.choice(pool)
-    t = re.sub(r"\?+\s*$", "?", t)
+    t = re.sub(r"\\?+\\s*$", "?", t)
     return t
 
 
@@ -155,94 +154,49 @@ def postprocesar(texto: str, personaje: str) -> str:
     return t
 
 
-# === Integracion con Ollama ===
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_CHAT_ENDPOINT = OLLAMA_URL.rstrip("/") + "/api/chat"
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
-OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "30"))
-OLLAMA_RETRIES = int(os.getenv("OLLAMA_RETRIES", "2"))
+# === Integracion con Groq ===
+load_dotenv()
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
-def _extraer_contenido_ollama(payload: Dict) -> Optional[str]:
-    if not isinstance(payload, dict):
-        return None
-
-    message = payload.get("message")
-    if isinstance(message, dict):
-        contenido = message.get("content")
-        if isinstance(contenido, str) and contenido.strip():
-            return contenido
-
-    mensajes = payload.get("messages")
-    if isinstance(mensajes, list):
-        for msg in reversed(mensajes):
-            if not isinstance(msg, dict):
-                continue
-            rol = msg.get("role") or msg.get("type")
-            if rol in {"assistant", "model"}:
-                contenido = msg.get("content")
-                if isinstance(contenido, str) and contenido.strip():
-                    return contenido
-
-    respuesta = payload.get("response")
-    if isinstance(respuesta, str) and respuesta.strip():
-        return respuesta
-
-    return None
-
-
-def ollama_request(
-    modelo: str,
-    system_prompt: str,
-    user_prompt: str,
-    options: Optional[Dict] = None,
-    history: Optional[List[Dict]] = None,
-    timeout: Optional[float] = None,
-    retries: Optional[int] = None,
-) -> str:
+def _construir_mensajes(system_prompt: str, user_prompt: str, history: Optional[List[Dict]]) -> List[Dict[str, str]]:
     mensajes: List[Dict[str, str]] = [
         {"role": "system", "content": system_prompt},
     ]
-
     if history:
         mensajes.extend(history)
-
     mensajes.append({"role": "user", "content": user_prompt})
+    return mensajes
 
-    body: Dict = {
-        "model": modelo,
-        "messages": mensajes,
-        "stream": False,
-    }
-    if options:
-        body["options"] = options
 
-    intentos = retries if retries is not None else OLLAMA_RETRIES
-    espera = 1.0
-    last_error: Optional[Exception] = None
+def _llamar_groq(
+    system_prompt: str,
+    user_prompt: str,
+    temperature: float,
+    max_tokens: int,
+    history: Optional[List[Dict]] = None,
+) -> str:
+    mensajes = _construir_mensajes(system_prompt, user_prompt, history)
+    try:
+        respuesta = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=mensajes,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            presence_penalty=0.2,
+            frequency_penalty=0.2,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(f"Fallo al llamar a Groq: {exc}") from exc
 
-    for intento in range(1, intentos + 1):
-        try:
-            respuesta = requests.post(
-                OLLAMA_CHAT_ENDPOINT,
-                json=body,
-                timeout=timeout or OLLAMA_TIMEOUT,
-            )
-            respuesta.raise_for_status()
-            data = respuesta.json()
-            contenido = _extraer_contenido_ollama(data)
-            if not contenido:
-                raise RuntimeError("La respuesta de Ollama no contiene mensaje de asistente.")
-            return contenido.strip()
-        except (RequestException, ValueError, RuntimeError) as exc:
-            last_error = exc
-            if intento < intentos:
-                time.sleep(espera)
-                espera *= 2
-            else:
-                break
+    if not respuesta.choices:
+        raise RuntimeError("Groq no devolvio opciones de respuesta.")
 
-    raise RuntimeError(f"Fallo al invocar Ollama despues de {intentos} intentos: {last_error}")
+    contenido = respuesta.choices[0].message.content if respuesta.choices[0].message else None
+    if not contenido or not contenido.strip():
+        raise RuntimeError("Groq devolvio una respuesta vacia.")
+    return contenido.strip()
 
 
 def generar_respuesta(personaje_prompt, mensaje, personaje, history: Optional[List[Dict]] = None):
@@ -254,29 +208,22 @@ def generar_respuesta(personaje_prompt, mensaje, personaje, history: Optional[Li
     )
 
     temp = 0.7 if personaje == "buffett" else 0.8
-    opciones = {
-        "temperature": temp,
-        "num_predict": 220,
-    }
 
-    try:
-        texto = ollama_request(
-            OLLAMA_MODEL,
-            prompt_personaje(personaje_prompt),
-            msg_ctx,
-            options=opciones,
-            history=history,
-        )
-    except RuntimeError as exc:
-        raise RuntimeError(f"No fue posible generar respuesta para {personaje}: {exc}") from exc
+    texto = _llamar_groq(
+        prompt_personaje(personaje_prompt),
+        msg_ctx,
+        temperature=temp,
+        max_tokens=220,
+        history=history,
+    )
 
     if es_corto(texto):
         try:
-            texto = ollama_request(
-                OLLAMA_MODEL,
+            texto = _llamar_groq(
                 prompt_personaje(personaje_prompt),
                 msg_ctx + "\n\nAmplia en 1-2 frases mas y cierra con una sola pregunta.",
-                options=opciones,
+                temperature=temp,
+                max_tokens=220,
                 history=history,
             )
         except RuntimeError:
